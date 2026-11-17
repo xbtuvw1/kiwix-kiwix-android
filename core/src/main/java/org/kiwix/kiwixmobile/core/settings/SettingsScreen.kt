@@ -59,7 +59,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -400,17 +399,10 @@ private fun LanguageCategory(
       listOf(Locale.ROOT.language) + LanguageUtils(context).keys
     }
 
-    val prefLanguage by coreSettingsViewModel.kiwixDataStore.prefLanguage
-      .collectAsState(initial = "en")
     val selectedCode =
-      when {
-        !AppCompatDelegate.getApplicationLocales().isEmpty ->
-          // Fetches the current Application Locale from the list
-          AppCompatDelegate.getApplicationLocales()[0]?.language ?: "en"
-
-        languageCodes.contains(prefLanguage) -> prefLanguage
-        else -> "en"
-      }
+      AppCompatDelegate.getApplicationLocales()[0]?.language
+        ?.takeIf(languageCodes::contains)
+        ?: Locale.ROOT.language
 
     val systemLocale = remember { LocaleHelper.getSystemLocale(context) }
     val uiLocale = context.resources.configuration.locales.get(0) ?: Locale.getDefault()

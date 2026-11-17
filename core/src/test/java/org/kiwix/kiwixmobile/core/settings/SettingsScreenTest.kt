@@ -47,6 +47,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -737,7 +738,7 @@ class SettingsScreenTest {
       .onNodeWithText(context.getString(R.string.pref_language_title))
       .performClick()
     composeTestRule
-      .onNodeWithText(systemLanguageLabel)
+      .onNode(hasTestTag(DIALOG_PREFERENCE_ITEM_TESTING_TAG) and hasText(systemLanguageLabel))
       .assertIsDisplayed()
   }
 
@@ -759,7 +760,7 @@ class SettingsScreenTest {
       .onNodeWithText(context.getString(R.string.pref_language_title))
       .performClick()
     composeTestRule
-      .onNodeWithText(systemLanguageLabel)
+      .onNode(hasTestTag(DIALOG_PREFERENCE_ITEM_TESTING_TAG) and hasText(systemLanguageLabel))
       .performClick()
     verify { mockViewModel.updateAppLanguage(Locale.ROOT.language) }
   }
@@ -834,6 +835,44 @@ class SettingsScreenTest {
       .onNode(hasClickAction())
       .assert(hasText(context.getString(R.string.pref_theme)))
       .assert(hasText("System default"))
+  }
+
+  @Test
+  fun settingsScreen_languageCategory_defaultsToSystemLanguageSummary() {
+    val systemLocale = LocaleHelper.getSystemLocale(context)
+    val systemLanguageName = systemLocale.getDisplayLanguage(systemLocale).replaceFirstChar {
+      if (it.isLowerCase()) it.titlecase(systemLocale) else "$it"
+    }
+    val systemLanguageLabel = context.getString(R.string.system_language_with_name, systemLanguageName)
+
+    renderSettingsScreen(
+      createMockViewModel(
+        uiState = SettingsUiState(shouldShowLanguageCategory = true)
+      )
+    )
+    scrollToText(context.getString(R.string.user_interface))
+    composeTestRule
+      .onNodeWithText(systemLanguageLabel)
+      .assertIsDisplayed()
+  }
+
+  @Test
+  fun settingsScreen_languageCategory_ignoresStalePrefLanguageWhenAppLocalesEmpty() {
+    val systemLocale = LocaleHelper.getSystemLocale(context)
+    val systemLanguageName = systemLocale.getDisplayLanguage(systemLocale).replaceFirstChar {
+      if (it.isLowerCase()) it.titlecase(systemLocale) else "$it"
+    }
+    val systemLanguageLabel = context.getString(R.string.system_language_with_name, systemLanguageName)
+    val mockViewModel = createMockViewModel(
+      uiState = SettingsUiState(shouldShowLanguageCategory = true)
+    )
+    every { mockViewModel.kiwixDataStore.prefLanguage } returns flowOf("en")
+
+    renderSettingsScreen(mockViewModel)
+    scrollToText(context.getString(R.string.user_interface))
+    composeTestRule
+      .onNodeWithText(systemLanguageLabel)
+      .assertIsDisplayed()
   }
 
   @Test
